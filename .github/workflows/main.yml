@@ -24,6 +24,10 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
+      - name: Fix Android Embedding V2
+        run: |
+          sed -i 's/flutterEmbedding="1"/flutterEmbedding="2"/g' android/app/src/main/AndroidManifest.xml || true
+
       - name: Install dependencies
         run: flutter pub get
 

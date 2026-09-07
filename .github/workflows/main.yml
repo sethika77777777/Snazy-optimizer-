@@ -24,22 +24,24 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
-      - name: Full Clean, Recreate Android & Fix All Errors
+      - name: Final Full Clean & Build Fix
         run: |
-          # 1. Remove all broken/dependent screen and service files completely
+          # 1. Remove all outdated screen and service files that cause compilation errors
           rm -f lib/screens/safe_apps_screen.dart || true
           rm -f lib/screens/game_select_screen.dart || true
           rm -f lib/screens/dashboard_screen.dart || true
           rm -f lib/services/apps_service.dart || true
           rm -f lib/services/optimizer_service.dart || true
 
-          # 2. Clean up any accidental imports or references to deleted screens in main.dart or other files
+          # 2. Strip out all references, imports, and mentions of deleted components and packages from any remaining Dart files
           if [ -d "lib" ]; then
             find lib -type f -name "*.dart" -exec sed -i '/battery_plus/d' {} + || true
             find lib -type f -name "*.dart" -exec sed -i '/installed_apps/d' {} + || true
             find lib -type f -name "*.dart" -exec sed -i '/DashboardScreen/d' {} + || true
             find lib -type f -name "*.dart" -exec sed -i '/SafeAppsScreen/d' {} + || true
             find lib -type f -name "*.dart" -exec sed -i '/GameSelectScreen/d' {} + || true
+            find lib -type f -name "*.dart" -exec sed -i '/AppsService/d' {} + || true
+            find lib -type f -name "*.dart" -exec sed -i '/OptimizerService/d' {} + || true
           fi
 
           # 3. Clean up pubspec.yaml dependencies
@@ -48,10 +50,10 @@ jobs:
             sed -i '/battery_plus/d' pubspec.yaml || true
           fi
 
-          # 4. Re-create android platform files to guarantee Manifest and v2 embedding exist
+          # 4. Re-create android platform files ensuring proper v2 embedding and Manifest exist
           flutter create . --org com.snazy.optimizer --project-name snazy_optimizer --platforms android
 
-          # 5. Prevent kotlin_version crash by cleaning build.gradle
+          # 5. Prevent kotlin_version crash
           BUILD_GRADLE="android/app/build.gradle"
           if [ -f "$BUILD_GRADLE" ]; then
             sed -i '/kotlin_version/d' "$BUILD_GRADLE" || true

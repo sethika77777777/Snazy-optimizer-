@@ -1,8 +1,8 @@
 name: snazy_optimizer
-description: "A new Flutter project."
+description: "A gaming performance optimizer for Android."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.10+10
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -10,7 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   shared_preferences: ^2.2.2
+  battery_plus: ^5.0.3
+  installed_apps: ^1.5.0
 
 dev_dependencies:
   flutter_test:

@@ -24,7 +24,7 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
-      - name: Create Clean Project and Remove Unused References
+      - name: Create Clean Project and Restore Dependencies
         run: |
           mkdir -p temp_backup
           if [ -d "lib" ]; then cp -r lib temp_backup/; fi
@@ -35,10 +35,15 @@ jobs:
           if [ -d "temp_backup/lib" ]; then rm -rf lib && cp -r temp_backup/lib .; fi
           if [ -f "temp_backup/pubspec.yaml" ]; then cp temp_backup/pubspec.yaml .; fi
 
-          # Remove battery_plus and installed_apps from any dart files if present
-          if [ -d "lib" ]; then
-            find lib -type f -name "*.dart" -exec sed -i '/battery_plus/d' {} + || true
-            find lib -type f -name "*.dart" -exec sed -i '/installed_apps/d' {} + || true
+          # Automatically add back installed_apps and battery_plus to pubspec.yaml if they are missing
+          PUB_FILE="pubspec.yaml"
+          if [ -f "$PUB_FILE" ]; then
+            if ! grep -q "installed_apps:" "$PUB_FILE"; then
+              sed -i '/dependencies:/a \  installed_apps: ^0.10.6' "$PUB_FILE" || true
+            fi
+            if ! grep -q "battery_plus:" "$PUB_FILE"; then
+              sed -i '/dependencies:/a \  battery_plus: ^5.1.2' "$PUB_FILE" || true
+            fi
           fi
 
           # Fix the kotlin_version line in android/app/build.gradle

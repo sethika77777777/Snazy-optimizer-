@@ -1,7 +1,8 @@
-name: snazy
-description: "Snazy - Root & Non-Root Gaming Performance Optimizer"
+name: snazy_optimizer
+description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.10+1
+
+version: 1.0.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -9,19 +10,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
-  installed_apps: ^1.4.1        # lists installed apps, icons, launch by package
-  permission_handler: ^11.3.1   # storage / usage-stats permission requests
-  shared_preferences: ^2.2.3    # persist safe-list, selected game, frozen apps, prefs
-dependencies:
-  flutter:
-    sdk: flutter
   battery_plus: ^6.0.0
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true

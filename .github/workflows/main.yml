@@ -24,13 +24,13 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
-      - name: Clean Up Code and Dependencies
+      - name: Clean Code and Re-create Android Platform
         run: |
           # Remove problematic screen/service files if they exist
           rm -f lib/screens/safe_apps_screen.dart || true
           rm -f lib/services/apps_service.dart || true
 
-          # Remove any accidental battery_plus or installed_apps imports from all dart files
+          # Remove any accidental battery_plus or installed_apps imports
           if [ -d "lib" ]; then
             find lib -type f -name "*.dart" -exec sed -i '/battery_plus/d' {} + || true
             find lib -type f -name "*.dart" -exec sed -i '/installed_apps/d' {} + || true
@@ -42,7 +42,10 @@ jobs:
             sed -i '/battery_plus/d' pubspec.yaml || true
           fi
 
-          # Fix kotlin_version in build.gradle
+          # FIRST: Re-create android platform files so AndroidManifest.xml exists
+          flutter create . --org com.snazy.optimizer --project-name snazy_optimizer --platforms android
+
+          # Fix kotlin_version in build.gradle if present
           BUILD_GRADLE="android/app/build.gradle"
           if [ -f "$BUILD_GRADLE" ]; then
             sed -i '/kotlin_version/d' "$BUILD_GRADLE" || true

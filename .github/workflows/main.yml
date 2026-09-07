@@ -24,19 +24,22 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
-      - name: Create Clean Flutter Project and Replace Lib
+      - name: Create Clean Flutter Project and Fix Kotlin
         run: |
-          # Save the current lib and pubspec if they exist
           mkdir -p temp_backup
           if [ -d "lib" ]; then cp -r lib temp_backup/; fi
           if [ -f "pubspec.yaml" ]; then cp pubspec.yaml temp_backup/; fi
 
-          # Create a fresh flutter project named 'app'
           flutter create . --org com.snazy.optimizer --project-name snazy_optimizer --platforms android
 
-          # Restore the user's lib and pubspec
           if [ -d "temp_backup/lib" ]; then rm -rf lib && cp -r temp_backup/lib .; fi
           if [ -f "temp_backup/pubspec.yaml" ]; then cp temp_backup/pubspec.yaml .; fi
+
+          # Fix kotlin version issue in build.gradle if present
+          BUILD_GRADLE="android/app/build.gradle"
+          if [ -f "$BUILD_GRADLE" ]; then
+            sed -i 's/kotlin_version = .*/kotlin_version = "1.9.22"/g' "$BUILD_GRADLE" || true
+          fi
 
       - name: Install dependencies
         run: flutter pub get

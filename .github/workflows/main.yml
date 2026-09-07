@@ -24,9 +24,9 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
-      - name: Clean Up Problematic Files and Dependencies
+      - name: Generate Missing Android Configuration
         run: |
-          # Remove the specific files causing build errors
+          # Remove problematic files
           rm -f lib/screens/safe_apps_screen.dart || true
           rm -f lib/services/apps_service.dart || true
 
@@ -36,11 +36,8 @@ jobs:
             sed -i '/battery_plus/d' pubspec.yaml || true
           fi
 
-          # Fix the kotlin_version line in android/app/build.gradle
-          BUILD_GRADLE="android/app/build.gradle"
-          if [ -f "$BUILD_GRADLE" ]; then
-            sed -i '/kotlin_version/d' "$BUILD_GRADLE" || true
-          fi
+          # Re-create full android platform files if android folder is incomplete
+          flutter create . --org com.snazy.optimizer --project-name snazy_optimizer --platforms android
       
       - name: Install dependencies
         run: flutter pub get

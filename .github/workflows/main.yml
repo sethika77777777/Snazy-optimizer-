@@ -32,6 +32,38 @@ jobs:
             --project-name snazy_optimizer \
             --platforms android
 
+      - name: Fix Kotlin configuration
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          gradle = Path("android/app/build.gradle")
+          text = gradle.read_text()
+
+          text = text.replace(
+              "implementation \"org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version\"",
+              "implementation \"org.jetbrains.kotlin:kotlin-stdlib:1.9.22\""
+          )
+
+          text = text.replace(
+              "implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version'",
+              "implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'"
+          )
+
+          text = text.replace(
+              "implementation \"org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version\"",
+              "implementation \"org.jetbrains.kotlin:kotlin-stdlib:1.9.22\""
+          )
+
+          text = text.replace(
+              "implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version'",
+              "implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'"
+          )
+
+          gradle.write_text(text)
+          print("Kotlin dependency fixed.")
+          PY
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -45,7 +77,7 @@ jobs:
           test -f lib/screens/dashboard_screen.dart
           echo "dashboard_screen.dart FOUND"
 
-          echo "=== Project structure ==="
+          echo "=== Project files ==="
           ls -la lib/screens
 
       - name: Build APK

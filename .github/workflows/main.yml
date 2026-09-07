@@ -24,7 +24,7 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
-      - name: Create Clean Flutter Project and Fix Build Gradle
+      - name: Create Clean Project and Remove Battery Plus References
         run: |
           mkdir -p temp_backup
           if [ -d "lib" ]; then cp -r lib temp_backup/; fi
@@ -35,11 +35,9 @@ jobs:
           if [ -d "temp_backup/lib" ]; then rm -rf lib && cp -r temp_backup/lib .; fi
           if [ -f "temp_backup/pubspec.yaml" ]; then cp temp_backup/pubspec.yaml .; fi
 
-          # Fix the build.gradle kotlin property issue completely
-          BUILD_GRADLE="android/app/build.gradle"
-          if [ -f "$BUILD_GRADLE" ]; then
-            # Replace kotlin_version dependency lookup with a safe string or remove the failing line
-            sed -i '/kotlin_version/d' "$BUILD_GRADLE" || true
+          # Remove any remaining imports or usage of battery_plus from the code files
+          if [ -d "lib" ]; then
+            find lib -type f -name "*.dart" -exec sed -i '/battery_plus/d' {} + || true
           fi
 
       - name: Install dependencies

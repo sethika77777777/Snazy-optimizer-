@@ -13,7 +13,10 @@ dependencies:
   installed_apps: ^1.4.1        # lists installed apps, icons, launch by package
   permission_handler: ^11.3.1   # storage / usage-stats permission requests
   shared_preferences: ^2.2.3    # persist safe-list, selected game, frozen apps, prefs
-  battery_plus: ^6.0.1          # battery level/charging state (extra cross-check)
+dependencies:
+  flutter:
+    sdk: flutter
+  battery_plus: ^6.0.0
 
 dev_dependencies:
   flutter_test:

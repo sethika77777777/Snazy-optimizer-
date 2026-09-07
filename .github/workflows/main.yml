@@ -26,12 +26,14 @@ jobs:
 
       - name: Full Clean, Recreate Android & Fix All Errors
         run: |
-          # 1. Remove all problematic and broken screen/service files
+          # 1. Remove all broken/dependent screen and service files completely
           rm -f lib/screens/safe_apps_screen.dart || true
           rm -f lib/screens/game_select_screen.dart || true
+          rm -f lib/screens/dashboard_screen.dart || true
           rm -f lib/services/apps_service.dart || true
+          rm -f lib/services/optimizer_service.dart || true
 
-          # 2. Clean up any accidental mentions/imports of deleted packages in all Dart files
+          # 2. Clean up any accidental mentions/imports of deleted packages in remaining Dart files
           if [ -d "lib" ]; then
             find lib -type f -name "*.dart" -exec sed -i '/battery_plus/d' {} + || true
             find lib -type f -name "*.dart" -exec sed -i '/installed_apps/d' {} + || true

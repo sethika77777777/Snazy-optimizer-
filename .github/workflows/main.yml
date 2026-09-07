@@ -24,11 +24,17 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
-      - name: Setup Project and Fix Gradle
+      - name: Clean Up Code and Dependencies
         run: |
-          # Remove problematic files
+          # Remove problematic screen/service files if they exist
           rm -f lib/screens/safe_apps_screen.dart || true
           rm -f lib/services/apps_service.dart || true
+
+          # Remove any accidental battery_plus or installed_apps imports from all dart files
+          if [ -d "lib" ]; then
+            find lib -type f -name "*.dart" -exec sed -i '/battery_plus/d' {} + || true
+            find lib -type f -name "*.dart" -exec sed -i '/installed_apps/d' {} + || true
+          fi
 
           # Remove unused dependencies from pubspec.yaml
           if [ -f "pubspec.yaml" ]; then
@@ -36,10 +42,7 @@ jobs:
             sed -i '/battery_plus/d' pubspec.yaml || true
           fi
 
-          # Re-create android platform files
-          flutter create . --org com.snazy.optimizer --project-name snazy_optimizer --platforms android
-
-          # CRITICAL: Remove the line causing kotlin_version error from build.gradle after creation
+          # Fix kotlin_version in build.gradle
           BUILD_GRADLE="android/app/build.gradle"
           if [ -f "$BUILD_GRADLE" ]; then
             sed -i '/kotlin_version/d' "$BUILD_GRADLE" || true

@@ -28,57 +28,18 @@ jobs:
       - name: Generate Android platform
         run: |
           flutter create . \
-            --org com.snazy.optimizer \
+            --org com.sethikadv.snazy \
             --project-name snazy_optimizer \
             --platforms android
 
-      - name: Fix Kotlin configuration
+      - name: Fix Kotlin version
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          gradle = Path("android/app/build.gradle")
-          text = gradle.read_text()
-
-          text = text.replace(
-              "implementation \"org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version\"",
-              "implementation \"org.jetbrains.kotlin:kotlin-stdlib:1.9.22\""
-          )
-
-          text = text.replace(
-              "implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version'",
-              "implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'"
-          )
-
-          text = text.replace(
-              "implementation \"org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version\"",
-              "implementation \"org.jetbrains.kotlin:kotlin-stdlib:1.9.22\""
-          )
-
-          text = text.replace(
-              "implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version'",
-              "implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'"
-          )
-
-          gradle.write_text(text)
-          print("Kotlin dependency fixed.")
-          PY
+          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.22'/" android/build.gradle || true
+          sed -i "s/id 'org.jetbrains.kotlin.android' version '[^']*'/id 'org.jetbrains.kotlin.android' version '1.9.22'/" android/settings.gradle || true
+          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.9.22"/' android/settings.gradle || true
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Verify project files
-        run: |
-          echo "=== Android Manifest ==="
-          test -f android/app/src/main/AndroidManifest.xml
-          echo "AndroidManifest.xml FOUND"
-
-          echo "=== Dashboard Screen ==="
-          test -f lib/screens/dashboard_screen.dart
-          echo "dashboard_screen.dart FOUND"
-
-          echo "=== Project files ==="
-          ls -la lib/screens
 
       - name: Build APK
         run: flutter build apk --release

@@ -25,27 +25,41 @@ jobs:
           flutter-version: "3.19.6"
           channel: "stable"
 
-      - name: Flutter Doctor
-        run: flutter doctor -v
+      - name: Generate Android platform
+        run: |
+          flutter create . \
+            --org com.snazy.optimizer \
+            --project-name snazy_optimizer \
+            --platforms android
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Verify source files
+      - name: Verify project files
         run: |
-          echo "=== lib/screens ==="
-          ls -la lib/screens
-          echo "=== DashboardScreen file ==="
+          echo "=== Android Manifest ==="
+          test -f android/app/src/main/AndroidManifest.xml
+          echo "AndroidManifest.xml FOUND"
+
+          echo "=== Dashboard Screen ==="
           test -f lib/screens/dashboard_screen.dart
           echo "dashboard_screen.dart FOUND"
-          echo "=== SplashScreen import ==="
-          sed -n '1,50p' lib/screens/splash_screen.dart
+
+          echo "=== Project structure ==="
+          ls -la lib/screens
 
       - name: Build APK
         run: flutter build apk --release
+
+      - name: Check APK
+        run: |
+          ls -lh build/app/outputs/flutter-apk/
+          test -f build/app/outputs/flutter-apk/app-release.apk
+          echo "APK BUILD SUCCESSFUL"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: snazy-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error

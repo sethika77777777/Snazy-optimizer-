@@ -1,99 +1,241 @@
-# Snazy — v1.0.10
-Gaming performance optimizer for Android 10+ (root & non-root modes)
-Developer: SethikaDV
+# Snazy Optimizer
 
-## What's real vs. what nothing can do (read this first)
+<p align="center">
+  <img src="assets/banner.png" alt="Snazy Optimizer Banner" width="900">
+</p>
 
-Every feature below is implemented against a real Android API — there is
-no simulated data or placebo animation pretending to do something it
-doesn't. But a few things you originally described are **not possible on
-any Android app**, by any developer, and I removed/adjusted them instead
-of faking them:
+<h1 align="center">Snazy Optimizer</h1>
 
-| Requested | Reality | What Snazy does instead |
+<p align="center">
+  <strong>Android Gaming Performance Optimizer</strong>
+</p>
+
+<p align="center">
+  Version 1.0.10 • Android 10+ • Root & Non-Root
+</p>
+
+<p align="center">
+  <a href="https://github.com/sethikaDV/Snazy-optimizer-/releases">
+    <img src="https://img.shields.io/github/v/release/sethikaDV/Snazy-optimizer-?style=for-the-badge" alt="Latest Release">
+  </a>
+  <a href="https://github.com/sethikaDV/Snazy-optimizer-/releases">
+    <img src="https://img.shields.io/github/downloads/sethikaDV/Snazy-optimizer-/total?style=for-the-badge" alt="Downloads">
+  </a>
+  <a href="https://github.com/sethikaDV/Snazy-optimizer-">
+    <img src="https://img.shields.io/github/stars/sethikaDV/Snazy-optimizer-?style=for-the-badge" alt="Stars">
+  </a>
+  <img src="https://img.shields.io/badge/Android-10%2B-green?style=for-the-badge" alt="Android 10+">
+</p>
+
+---
+
+# About Snazy Optimizer
+
+Snazy Optimizer is an Android performance optimization application
+designed for users who want a cleaner and more controlled gaming
+environment.
+
+The application provides different optimization paths depending on
+whether the device has root access or is running in standard
+non-root mode.
+
+Snazy is designed to work with Android system capabilities instead
+of pretending to provide system-level access that Android does not
+allow to normal applications.
+
+The goal is simple:
+
+> Select your game, apply the available optimizations, and launch the
+> game in an optimized environment.
+
+---
+
+# Version Information
+
+| Property | Information |
+|---|---|
+| Application | Snazy Optimizer |
+| Current Version | 1.0.10 |
+| Platform | Android |
+| Minimum Android | Android 10 |
+| Minimum SDK | 29 |
+| Target SDK | 34 |
+| Framework | Flutter |
+| Language | Dart / Kotlin |
+| Application ID | `com.sethikadv.snazy` |
+| Developer | SethikaDV |
+
+---
+
+# Screenshots
+
+## Dashboard
+
+<p align="center">
+  <img src="assets/screenshots/dashboard.png" alt="Snazy Optimizer Dashboard" width="300">
+</p>
+
+The dashboard provides the main entry point to Snazy Optimizer and
+allows the user to access the available optimization features.
+
+---
+
+## Game Selection
+
+<p align="center">
+  <img src="assets/screenshots/game-select.png" alt="Game Selection Screen" width="300">
+</p>
+
+The game selection screen allows the user to choose the game that
+will be optimized.
+
+---
+
+## Optimization
+
+<p align="center">
+  <img src="assets/screenshots/optimizer.png" alt="Optimizer Screen" width="300">
+</p>
+
+The optimizer applies the available actions according to the current
+device mode and available Android permissions.
+
+---
+
+## Safe Apps
+
+<p align="center">
+  <img src="assets/screenshots/safe-apps.png" alt="Safe Apps Screen" width="300">
+</p>
+
+Safe Apps provides a way to keep selected applications protected from
+optimization-related actions.
+
+---
+
+## Device Information
+
+<p align="center">
+  <img src="assets/screenshots/device-info.png" alt="Device Information" width="300">
+</p>
+
+The application can display available device information that can
+help the user understand the current device state.
+
+---
+
+# Features
+
+| Feature | Root Mode | Non-Root Mode |
+|---|:---:|:---:|
+| Game Selection | Yes | Yes |
+| Game Launching | Yes | Yes |
+| Performance Optimization | Yes | Limited |
+| System-Level Actions | Yes | Limited |
+| App Management | Yes | Limited |
+| Safe Apps | Yes | Yes |
+| Device Information | Yes | Yes |
+| Restore Support | Yes | Yes |
+| Android System Settings | Yes | Yes |
+
+The exact capabilities available to the application depend on the
+Android version, device manufacturer, permissions and whether root
+access is available.
+
+---
+
+# Root Mode
+
+When root access is available, Snazy Optimizer can use additional
+Android system capabilities that are not normally available to
+standard applications.
+
+Root mode is intended for users who already have a properly configured
+root environment.
+
+Snazy does not attempt to root a device from inside the application.
+
+The application detects available root access and uses the appropriate
+optimization path.
+
+### Root Mode Capabilities
+
+Depending on the device and Android version, root mode can provide
+access to operations such as:
+
+- System-level optimization actions
+- Application management
+- Background application control
+- Application freezing and restoring
+- Additional performance-related operations
+- More advanced device control
+
+The availability of individual operations depends on the Android
+environment.
+
+---
+
+# Non-Root Mode
+
+Snazy Optimizer also supports devices without root access.
+
+Android intentionally restricts third-party applications from
+performing many system-level operations.
+
+Because of these restrictions, non-root mode does not pretend to have
+root privileges.
+
+Instead, Snazy uses operations that are available to normal Android
+applications and provides the user with the appropriate Android
+system actions where required.
+
+### Non-Root Mode
+
+| Operation | Availability |
+|---|---|
+| Game selection | Available |
+| Game launching | Available |
+| Device information | Available |
+| Supported optimization actions | Available |
+| Root-only system modifications | Not available |
+| Direct system-level app control | Restricted by Android |
+
+---
+
+# What Android Allows vs What Snazy Does
+
+One of the important design principles of Snazy Optimizer is not to
+claim functionality that Android itself does not permit.
+
+| Requested Operation | Android Limitation | Snazy Approach |
 |---|---|---|
-| Grant root to non-root users | No app can root a device from inside itself | Detects existing root (Magisk/su); non-root users get the honest standard-mode path |
-| DirectX rendering option | DirectX doesn't exist on Android | Only OpenGL ES / Vulkan are offered |
-| Kill other apps' background processes (non-root) | Blocked by Android since API 26 for privacy | Non-root "boost" whitelists the game from battery throttling via the real system settings screen, then launches it |
-| Real per-app CPU/RAM stats (non-root) | Blocked since API 26 | Shows real **device-wide** CPU/RAM/battery instead |
-| "Freeze" background apps (root) | — | Genuinely disables other apps via `pm disable-user` — they cannot run at all, foreground or background, until re-enabled |
-| Restore | — | Runs `pm enable` on everything Snazy froze this session |
-| Force a *different app's* graphics API | An app's renderer is compiled into it; nothing external can swap it | The picker sets a Snazy-side preference only; a game must itself support the chosen API |
+| Grant root from the app | Android apps cannot root devices by themselves | Detect existing root access |
+| DirectX rendering | DirectX is not the normal Android graphics API | Use supported Android graphics technologies |
+| Kill arbitrary background apps | Restricted on modern Android | Use supported system mechanisms |
+| Per-app CPU/RAM statistics | Restricted on modern Android | Use available device-level information |
+| Freeze applications | Requires elevated access | Available where the required access exists |
+| Restore disabled applications | Requires appropriate permissions | Restore applications managed by Snazy |
 
-## Project structure
-```
-lib/
-  main.dart                     — entry point
-  theme.dart                    — dark glass theme
-  services/
-    native_bridge.dart          — Dart <-> Kotlin platform channel
-    apps_service.dart           — installed apps list (installed_apps plugin)
-    optimizer_service.dart      — root freeze/restore + non-root boost logic + prefs
-  screens/
-    splash_screen.dart          — root detection on launch
-    dashboard_screen.dart       — stats, boost button/animation, freeze toggle, graphics picker
-    game_select_screen.dart     — pick the game to optimize
-    safe_apps_screen.dart       — pick apps exempt from freeze
-  widgets/
-    glass_card.dart             — real BackdropFilter frosted glass
-    stat_box.dart                — CPU/RAM/battery tile
-android/app/src/main/kotlin/com/sethikadv/snazy/MainActivity.kt
-    — root detection, su command execution, /proc/stat CPU read,
-      ActivityManager RAM read, BatteryManager read, battery-opt intent
-```
+This means Snazy focuses on real Android functionality rather than
+fake optimization animations or simulated performance numbers.
 
-## Setup (do this locally — I can't run Flutter/Android SDK in this sandbox)
+---
 
-1. Install Flutter (stable channel) and Android SDK/NDK via Android Studio.
-2. `flutter create --org com.sethikadv --project-name snazy .` in an empty
-   folder is normally how you'd scaffold this — I've instead handed you
-   the `lib/`, `android/app/src/main/...` files directly. Run:
-   ```
-   flutter create --platforms=android --org com.sethikadv .
-   ```
-   in this folder first if `android/` is missing the gradle wrapper /
-   other boilerplate files (gradlew, settings.gradle, res/ icons, etc.),
-   then drop these files back in — that generates the parts that are
-   pure Flutter tooling boilerplate and don't affect app logic.
-3. `flutter pub get`
-4. Connect a device or emulator (Android 10+, i.e. API 29+) and run:
-   ```
-   flutter run
-   ```
-5. To test root features you need a **rooted physical device** or a
-   rooted emulator image with Magisk — the Play Store / stock emulators
-   are not rooted by default.
+# Game Optimization
 
-## Build a release APK
-```
-flutter build apk --release --split-per-abi
-```
-`--split-per-abi` keeps each APK small (separate arm64/armeabi builds)
-which is what will actually keep you under the 150MB target on low-end
-devices — a single universal "fat" APK bundling all architectures is
-the main way Flutter apps blow past that size.
+Snazy Optimizer is designed around a simple gaming workflow.
 
-## Push to GitHub
-```
-git init
-git add .
-git commit -m "Snazy v1.0.10 - initial commit"
-git branch -M main
-git remote add origin https://github.com/<your-username>/snazy.git
-git push -u origin main
-```
-Add a `.gitignore` for `/build/`, `.dart_tool/`, `.gradle/`, `local.properties`
-before your first commit (a standard `flutter create` run generates one —
-grab it from a fresh `flutter create` project if this repo doesn't have
-one yet).
-
-## Known limitations to test for on real hardware
-- `/proc/stat` CPU reads are blocked by some OEM SELinux policies on
-  Android 12+ (mainly some Xiaomi/Samsung builds) — the UI shows `--`
-  rather than a fake number when this happens.
-- `pm disable-user` on a small number of OEM skins requires the target
-  package to not be the default launcher/dialer — Snazy already skips
-  `android`, `com.google.android.gms`, and `com.android.*` to avoid
-  bricking the freeze session, but test broadly before shipping.
-- App icon, splash branding, and Play Store assets aren't included —
-  add your own launcher icons under `android/app/src/main/res/mipmap-*`.
+```text
+Open Snazy
+     |
+     v
+Select Optimization Mode
+     |
+     v
+Select Game
+     |
+     v
+Apply Available Optimizations
+     |
+     v
+Launch Game

@@ -72,57 +72,20 @@ The goal is simple:
 ## Dashboard
 
 <p align="center">
-  <img src="assets/screenshots/dashboard.png" alt="Snazy Optimizer Dashboard" width="300">
+  <img src="assets/screenshots/dashboard.jpeg" width="320">
 </p>
-
-The dashboard provides the main entry point to Snazy Optimizer and
-allows the user to access the available optimization features.
-
----
 
 ## Game Selection
 
 <p align="center">
-  <img src="assets/screenshots/game-select.png" alt="Game Selection Screen" width="300">
+  <img src="assets/screenshots/game-selection.jpeg" width="320">
 </p>
 
-The game selection screen allows the user to choose the game that
-will be optimized.
-
----
-
-## Optimization
+## Boosting Process
 
 <p align="center">
-  <img src="assets/screenshots/optimizer.png" alt="Optimizer Screen" width="300">
+  <img src="assets/screenshots/boosting.jpeg" width="320">
 </p>
-
-The optimizer applies the available actions according to the current
-device mode and available Android permissions.
-
----
-
-## Safe Apps
-
-<p align="center">
-  <img src="assets/screenshots/safe-apps.png" alt="Safe Apps Screen" width="300">
-</p>
-
-Safe Apps provides a way to keep selected applications protected from
-optimization-related actions.
-
----
-
-## Device Information
-
-<p align="center">
-  <img src="assets/screenshots/device-info.png" alt="Device Information" width="300">
-</p>
-
-The application can display available device information that can
-help the user understand the current device state.
-
----
 
 # Features
 

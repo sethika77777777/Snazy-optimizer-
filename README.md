@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  Version 1.0.10 • Android 10+ • Root & Non-Root
+  Version 2.0.0 • Android 10+ • Root, Shizuku & Non-Root
 </p>
 
 <p align="center">
@@ -55,7 +55,7 @@ The goal is simple:
 | Property | Information |
 |---|---|
 | Application | Snazy Optimizer |
-| Current Version | 1.0.10 |
+| Current Version | 2.0.0 |
 | Platform | Android |
 | Minimum Android | Android 10 |
 | Minimum SDK | 29 |
@@ -89,21 +89,50 @@ The goal is simple:
 
 # Features
 
-| Feature | Root Mode | Non-Root Mode |
-|---|:---:|:---:|
-| Game Selection | Yes | Yes |
-| Game Launching | Yes | Yes |
-| Performance Optimization | Yes | Limited |
-| System-Level Actions | Yes | Limited |
-| App Management | Yes | Limited |
-| Safe Apps | Yes | Yes |
-| Device Information | Yes | Yes |
-| Restore Support | Yes | Yes |
-| Android System Settings | Yes | Yes |
+| Feature | Root Mode | Shizuku Mode | Non-Root Mode |
+|---|:---:|:---:|:---:|
+| Game Selection | Yes | Yes | Yes |
+| Game Launching | Yes | Yes | Yes |
+| Optimization Profiles (Performance / Better / Normal / Ultra Battery Saver) | Yes | Yes | Normal only |
+| CPU governor + max-clock unlock | Yes | Yes | No |
+| GPU governor control (where exposed) | Yes | Yes | No |
+| Background Freeze (force-stop, never disable) | Yes | Yes | Limited |
+| Safe Apps (exclude from freeze) | Yes | Yes | Yes |
+| Device Information | Yes | Yes | Yes |
+| Restore Support | Yes | Yes | Yes |
+| Android System Settings | Yes | Yes | Yes |
 
 The exact capabilities available to the application depend on the
 Android version, device manufacturer, permissions and whether root
-access is available.
+or Shizuku access is available.
+
+## Optimization Profiles
+
+Snazy ships four profiles (root or Shizuku required, except Normal):
+
+- **Performance** — every CPU core's governor set to `performance` and
+  pinned to its own highest stock clock speed, plus the GPU governor
+  where the chip exposes one. This is the fastest the hardware already
+  supports — Android has no safe, generic way to push a chip past its
+  own manufacturer limits, so that is never attempted.
+- **Better** — CPU governor set to `performance` but capped below the
+  absolute ceiling, so the device runs fast without sitting at max
+  clock (and max heat) the whole time. GPU is left untouched.
+- **Normal** — restores the exact governor/frequency values Snazy
+  found the very first time it ran on the device (captured once,
+  automatically) — a real factory baseline, not a guess.
+- **Ultra Battery Saver** — governor set to `powersave` with CPU and
+  GPU clocks pinned low for extended sessions.
+
+## Shizuku Support (root-level access without rooting)
+
+Devices without root can still use Performance/Better/Ultra Battery
+Saver and full Background Freeze by granting
+[Shizuku](https://shizuku.rikka.app) — an open-source tool that gives
+an app the same shell-level access `adb` already has, without rooting
+the device. Snazy includes an in-app setup guide (tap the **STANDARD**
+badge on the dashboard, or open a locked profile) that walks through
+installing Shizuku, starting it, and granting permission.
 
 ---
 
@@ -176,8 +205,8 @@ claim functionality that Android itself does not permit.
 | DirectX rendering | DirectX is not the normal Android graphics API | Use supported Android graphics technologies |
 | Kill arbitrary background apps | Restricted on modern Android | Use supported system mechanisms |
 | Per-app CPU/RAM statistics | Restricted on modern Android | Use available device-level information |
-| Freeze applications | Requires elevated access | Available where the required access exists |
-| Restore disabled applications | Requires appropriate permissions | Restore applications managed by Snazy |
+| Freeze applications | Requires elevated access | Force-stops other apps' current process (root or Shizuku) — never disables them, so nothing needs re-enabling |
+| Overclock CPU/GPU past factory limits | No safe, generic API on Android | Unlock the chip's own highest stock clock instead — real, verifiable, and hardware-safe |
 
 This means Snazy focuses on real Android functionality rather than
 fake optimization animations or simulated performance numbers.

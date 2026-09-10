@@ -1,0 +1,17 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // The app writes its own device doc (token + last-active timestamp)
+    // and never needs to read anyone else's. All reads used to decide
+    // who gets nudged happen server-side via the Admin SDK, which
+    // bypasses these rules entirely — so this can stay write-only.
+    match /devices/{deviceId} {
+      allow create, update: if request.resource.data.keys().hasOnly(
+        ['fcmToken', 'platform', 'lastActiveAt', 'lastNudgeAt']
+      );
+      allow read, delete: if false;
+    }
+  }
+}

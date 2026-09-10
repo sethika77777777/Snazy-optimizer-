@@ -1,13 +1,54 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Snazy's whole purpose is letting the user pick ANY installed app
+         (game to optimize, or an app to keep alive during freeze), so it
+         genuinely needs to see the full package list on Android 11+, not
+         just apps it happens to interact with. Declared honestly, the way
+         a device-manager/launcher-class app is expected to. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <!-- Normal (install-time, no prompt) permission — lets the non-root
+         fallback ask Android to reap an app's own killable background
+         processes. Real API, real (if limited) effect; see MainActivity. -->
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES"/>
+
+    <!-- Android 13+ requires this to be granted at runtime before any
+         notification (including FCM push) can be shown. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <application
-        android:label="snazy_optimizer"
+        android:label="Snazy Optimizer"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Default channel FCM uses for "notification" payloads received
+             while the app is backgrounded/killed, and the icon it shows. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="snazy_reengagement" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+
+        <!-- Shizuku's own required entry point (from the official Shizuku-API
+             docs) — this is how Snazy receives the privileged binder from
+             the Shizuku/Sui app. The permission attribute is what keeps
+             other normal apps from talking to this provider directly. -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
         <activity
             android:name=".MainActivity"

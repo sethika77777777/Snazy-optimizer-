@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "478859989068",
+    "project_id": "my-app-dashboard-9363b",
+    "storage_bucket": "my-app-dashboard-9363b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:478859989068:android:09f72bfbd21641c5a124e9",
+        "android_client_info": {
+          "package_name": "com.sethikadv.snazy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhxFxIUXTFbpe2WcZjNXk_jYM1YcjEYzw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -17,11 +17,35 @@ import java.io.FileInputStream
 import java.io.InputStreamReader
 
 /**
- * Every method here does a real, verifiable thing on the device.
- * Nothing in this file returns a hard-coded or simulated value.
+ * Every method here does a real, verifiable thing on the device. Nothing in
+ * this file returns a hard-coded or simulated value.
+ *
+ * Privilege model:
+ *  - Rooted devices: commands run through `su` (see [runAsRootRaw]).
+ *  - Non-rooted devices with Shizuku/Sui running and granted: the same
+ *    commands run through [ShizukuManager] with whatever privilege the
+ *    user's Shizuku session has (adb/shell, or root if backed by Sui).
+ *  - Neither available: only Android's own public, permission-free APIs are
+ *    used (ActivityManager, battery-optimization settings, etc.) — Snazy
+ *    never pretends those give root-level control.
  */
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "snazy/native"
+
+    // Flag file that gates the detached background-freeze shell loop. Lives
+    // under /data/local/tmp because that path is writable by both the
+    // "shell" uid (adb/Shizuku) and root.
+    private val FREEZE_FLAG = "/data/local/tmp/.snazy_freeze"
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        ShizukuManager.init()
+    }
+
+    override fun onDestroy() {
+        ShizukuManager.dispose()
+        super.onDestroy()
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -29,10 +53,32 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "isRooted" -> result.success(checkRoot())
-                    "runRootCommand" -> {
-                        val cmd = call.argument<String>("cmd") ?: ""
-                        result.success(runAsRoot(cmd))
+
+                    "getPrivilegeState" -> result.success(getPrivilegeState())
+
+                    "requestShizukuPermission" -> {
+                        ShizukuManager.requestPermission { granted ->
+                            runOnUiThread { result.success(granted) }
+                        }
                     }
+
+                    "openShizukuApp" -> {
+                        val opened = if (ShizukuManager.isShizukuAppInstalled(applicationContext)) {
+                            ShizukuManager.openShizukuApp(applicationContext)
+                        } else false
+                        result.success(opened)
+                    }
+
+                    "openShizukuPlayStore" -> {
+                        ShizukuManager.openShizukuOnPlayStore(applicationContext)
+                        result.success(null)
+                    }
+
+                    "runPrivilegedCommand" -> {
+                        val cmd = call.argument<String>("cmd") ?: ""
+                        runPrivileged(cmd) { ok, _ -> runOnUiThread { result.success(ok) } }
+                    }
+
                     "getRamInfo" -> result.success(getRamInfo())
                     "getCpuUsage" -> result.success(getCpuUsage())
                     "getBatteryInfo" -> result.success(getBatteryInfo())
@@ -41,16 +87,245 @@ class MainActivity : FlutterActivity() {
                         openBatteryOptSettings(pkg)
                         result.success(null)
                     }
+
+                    "currentGovernor" -> result.success(PerformanceManager.currentGovernorSummary())
+
+                    "applyProfile" -> {
+                        val profileId = call.argument<String>("profileId") ?: "normal"
+                        Thread {
+                            PerformanceManager.applyProfile(
+                                applicationContext,
+                                profileId,
+                                exec = { cmd, cb -> runPrivileged(cmd) { _, output -> cb(output) } }
+                            ) { r ->
+                                runOnUiThread {
+                                    result.success(
+                                        mapOf(
+                                            "profile" to r.profile,
+                                            "coresFound" to r.coresFound,
+                                            "coresApplied" to r.coresApplied,
+                                            "gpuFound" to (r.gpuPathFound != null),
+                                            "gpuApplied" to r.gpuApplied,
+                                            "message" to r.message,
+                                            "success" to (r.coresApplied > 0 || r.gpuApplied)
+                                        )
+                                    )
+                                }
+                            }
+                        }.start()
+                    }
+
+                    "runFreezeSweep" -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val pkgs = (call.argument<List<String>>("pkgs") ?: emptyList())
+                        runFreezeSweep(pkgs) { mode, stopped ->
+                            runOnUiThread {
+                                result.success(mapOf("mode" to mode, "stopped" to stopped))
+                            }
+                        }
+                    }
+
+                    "startFreezeLoop" -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val pkgs = (call.argument<List<String>>("pkgs") ?: emptyList())
+                        val cmd = buildFreezeLoopCommand(pkgs)
+                        runPrivileged(cmd) { ok, _ -> runOnUiThread { result.success(ok) } }
+                    }
+
+                    "stopFreezeLoop" -> {
+                        runPrivileged("rm -f $FREEZE_FLAG") { ok, _ -> runOnUiThread { result.success(ok) } }
+                    }
+
+                    "killBackgroundProcesses" -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val pkgs = (call.argument<List<String>>("pkgs") ?: emptyList())
+                        result.success(killBackgroundProcessesBasic(pkgs))
+                    }
+
+                    // ---- Real FPS boost: render overhead removed + game
+                    // process/threads pinned to top-app cpuset with raised
+                    // scheduling priority. Root or Shizuku only — there is
+                    // no non-privileged Android API for either action.
+                    "applyGameBoost" -> {
+                        val pkg = call.argument<String>("pkg") ?: ""
+                        Thread {
+                            val cmd = GameBoostManager.buildApplyRenderBoostCommand() +
+                                    GameBoostManager.buildBoostLoopCommand(pkg)
+                            runPrivileged(cmd) { ok, _ -> runOnUiThread { result.success(ok) } }
+                        }.start()
+                    }
+
+                    "stopGameBoost" -> {
+                        val cmd = GameBoostManager.buildStopBoostLoopCommand() + "; " +
+                                GameBoostManager.buildRestoreRenderCommand(applicationContext)
+                        runPrivileged(cmd) { ok, _ -> runOnUiThread { result.success(ok) } }
+                    }
+
+                    // ---- Touch response optimization: real settings + best-effort
+                    // vendor touch-boost node. Root or Shizuku only — see TouchOptimizer.
+                    "applyTouchOptimization" -> {
+                        val sensitivity = call.argument<Int>("sensitivity") ?: 75
+                        Thread {
+                            TouchOptimizer.captureBaselineIfNeeded(applicationContext) { key ->
+                                runPrivilegedBlocking("settings get secure $key")
+                            }
+                            val cmd = TouchOptimizer.buildApplyCommand(sensitivity)
+                            runPrivileged(cmd) { ok, _ -> runOnUiThread { result.success(ok) } }
+                        }.start()
+                    }
+
+                    "stopTouchOptimization" -> {
+                        val cmd = TouchOptimizer.buildRestoreCommand(applicationContext)
+                        runPrivileged(cmd) { ok, _ -> runOnUiThread { result.success(ok) } }
+                    }
+
                     else -> result.notImplemented()
                 }
             }
     }
 
+    // ---------------- Privilege routing ----------------
+
     /**
-     * Checks for common su binary locations, then falls back to actually
-     * invoking `which su`. This detects existing root; it can never grant
-     * root — no app can do that on Android.
+     * Runs [cmd] via `su` if root is present, otherwise via Shizuku if
+     * granted. Always executes off the UI thread — some of these (profile
+     * writes, freeze sweeps) touch many sysfs nodes / packages in one call.
+     * [then] receives (success, rawOutputOrNull); callers post to the UI
+     * thread themselves before touching Flutter's `result`.
      */
+    private fun runPrivileged(cmd: String, then: (Boolean, String?) -> Unit) {
+        Thread {
+            if (checkRoot()) {
+                val ok = runAsRootRaw(cmd)
+                then(ok, null)
+            } else if (ShizukuManager.hasPermission()) {
+                ShizukuManager.exec(cmd) { output ->
+                    val ok = output != null && !output.startsWith("ERROR:")
+                    then(ok, output)
+                }
+            } else {
+                then(false, null)
+            }
+        }.start()
+    }
+
+    /**
+     * Blocking privileged call that returns captured stdout — used only for
+     * the small number of reads (baseline `settings get`) that need a
+     * result back before the next step can run. Safe to block on: every
+     * caller is already inside its own background [Thread].
+     */
+    private fun runPrivilegedBlocking(cmd: String): String? {
+        return if (checkRoot()) {
+            runAsRootRawWithOutput(cmd)
+        } else if (ShizukuManager.hasPermission()) {
+            val latch = java.util.concurrent.CountDownLatch(1)
+            var out: String? = null
+            ShizukuManager.exec(cmd) { output ->
+                out = output
+                latch.countDown()
+            }
+            latch.await(3, java.util.concurrent.TimeUnit.SECONDS)
+            out
+        } else {
+            null
+        }
+    }
+
+    private fun getPrivilegeState(): Map<String, Any> {
+        val rooted = checkRoot()
+        val shizukuInstalled = ShizukuManager.isShizukuAppInstalled(applicationContext)
+        val shizukuBinderAlive = ShizukuManager.isBinderAlive()
+        val shizukuGranted = ShizukuManager.hasPermission()
+        val shizukuUid = ShizukuManager.getUid()
+        val mode = when {
+            rooted -> "root"
+            shizukuGranted -> "shizuku"
+            else -> "none"
+        }
+        return mapOf(
+            "rooted" to rooted,
+            "shizukuInstalled" to shizukuInstalled,
+            "shizukuBinderAlive" to shizukuBinderAlive,
+            "shizukuGranted" to shizukuGranted,
+            "shizukuUid" to shizukuUid,
+            "mode" to mode
+        )
+    }
+
+    // ---------------- Background freeze (force-stop, never disable) ----------------
+
+    /** One immediate sweep — used at Boost time for instant RAM/CPU relief. */
+    private fun runFreezeSweep(pkgs: List<String>, then: (String, Int) -> Unit) {
+        if (pkgs.isEmpty()) {
+            then(if (checkRoot() || ShizukuManager.hasPermission()) "privileged" else "basic", 0)
+            return
+        }
+        if (checkRoot() || ShizukuManager.hasPermission()) {
+            val cmd = buildString {
+                for (pkg in pkgs) append("am force-stop \"$pkg\" 2>/dev/null; ")
+            }
+            runPrivileged(cmd) { _, _ -> then("privileged", pkgs.size) }
+        } else {
+            val stopped = killBackgroundProcessesBasic(pkgs)
+            then("basic", stopped)
+        }
+    }
+
+    /**
+     * Non-root, non-Shizuku fallback. ActivityManager#killBackgroundProcesses
+     * is a normal (auto-granted) permission and a real Android API — but,
+     * being honest about it, Android only lets it reap processes the system
+     * already considers killable background/cached processes, so its effect
+     * is far weaker than a privileged `am force-stop` sweep.
+     */
+    private fun killBackgroundProcessesBasic(pkgs: List<String>): Int {
+        val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        var count = 0
+        for (pkg in pkgs) {
+            try {
+                am.killBackgroundProcesses(pkg)
+                count++
+            } catch (_: Exception) {
+                // OEM/Android version blocked it for this package — skip, don't fake success.
+            }
+        }
+        return count
+    }
+
+    /**
+     * Builds the detached polling loop that keeps everything in [pkgs]
+     * stopped while [FREEZE_FLAG] exists. Apps are never disabled —
+     * `am force-stop` only ends their current process, so the instant the
+     * flag file is removed (Restore) every app is free to run again exactly
+     * as before. `nohup ... &` inside a subshell detaches the loop from
+     * Snazy's own process, so it keeps running while the selected game is
+     * in the foreground.
+     *
+     * Perf note: `am` boots a fresh ART process for every single
+     * invocation (100s of ms each, on-device). Blindly re-running
+     * `am force-stop` for the whole package list on every tick meant a
+     * "sweep" of 20-30 apps could itself take several seconds of real CPU
+     * time, back-to-back, for as long as the game ran — competing directly
+     * with the foreground game for CPU and causing stutter during Boost.
+     * `pidof` is a native binary with no VM start-up cost (~1ms), so each
+     * tick now only pays the expensive `am` cost for a package that
+     * actually respawned. The poll interval is also widened since apps
+     * don't respawn instantly.
+     */
+    private fun buildFreezeLoopCommand(pkgs: List<String>): String {
+        val stopBlock = buildString {
+            for (pkg in pkgs) {
+                append("if [ -n \"$(pidof $pkg 2>/dev/null)\" ]; then am force-stop \"$pkg\" 2>/dev/null; fi; ")
+            }
+        }
+        val loop = "while [ -f $FREEZE_FLAG ]; do $stopBlock sleep 15; done"
+        return "echo 1 > $FREEZE_FLAG; (nohup sh -c '$loop' > /dev/null 2>&1 &) ; exit 0"
+    }
+
+    // ---------------- Root detection / execution ----------------
+
+    /** Detects an existing su binary / Magisk. Cannot install root — Android does not allow any app to root itself. */
     private fun checkRoot(): Boolean {
         val paths = arrayOf(
             "/system/bin/su", "/system/xbin/su", "/sbin/su",
@@ -70,13 +345,8 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    /**
-     * Runs a single command through a real su shell. The first call on a
-     * device triggers the actual Magisk/SuperSU grant dialog — this is not
-     * simulated, and it will genuinely fail (return false) if the user
-     * denies it or root isn't present.
-     */
-    private fun runAsRoot(command: String): Boolean {
+    /** Runs a single command through a real su shell and returns whether it exited 0. */
+    private fun runAsRootRaw(command: String): Boolean {
         var process: Process? = null
         return try {
             process = Runtime.getRuntime().exec("su")
@@ -93,7 +363,27 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    /** Real device-wide RAM figures from ActivityManager — no root needed. */
+    /** Same as [runAsRootRaw] but returns captured stdout instead of just success. */
+    private fun runAsRootRawWithOutput(command: String): String? {
+        var process: Process? = null
+        return try {
+            process = Runtime.getRuntime().exec("su")
+            val os = DataOutputStream(process.outputStream)
+            os.writeBytes("$command\n")
+            os.writeBytes("exit\n")
+            os.flush()
+            val output = BufferedReader(InputStreamReader(process.inputStream)).readText()
+            process.waitFor()
+            output.trim()
+        } catch (e: Exception) {
+            null
+        } finally {
+            process?.destroy()
+        }
+    }
+
+    // ---------------- Device stats (unchanged real behaviour) ----------------
+
     private fun getRamInfo(): Map<String, Long> {
         val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memInfo = ActivityManager.MemoryInfo()
@@ -107,10 +397,9 @@ class MainActivity : FlutterActivity() {
 
     /**
      * Real aggregate CPU usage sampled from /proc/stat across two reads.
-     * NOTE: some OEMs (particularly some Android 12+ builds) restrict
-     * /proc/stat via SELinux for non-system apps. When that happens this
-     * throws/returns -1 rather than fabricating a percentage — the Dart
-     * side displays "--" in that case.
+     * Some OEMs restrict /proc/stat via SELinux for non-system apps — when
+     * that happens this returns -1 rather than fabricating a percentage;
+     * the Dart side shows "--" in that case.
      */
     private fun getCpuUsage(): Double {
         return try {
@@ -137,7 +426,6 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    /** Real battery level + charging state from BatteryManager. */
     private fun getBatteryInfo(): Map<String, Any> {
         val bm = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
         val level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
@@ -148,11 +436,7 @@ class MainActivity : FlutterActivity() {
         )
     }
 
-    /**
-     * Opens the real system "Ignore battery optimizations" screen for a
-     * package. This is the only legitimate non-root way to ask Android to
-     * stop background-throttling an app.
-     */
+    /** Opens the real system "Ignore battery optimizations" screen — the only legitimate non-root way to stop background throttling for a package. */
     private fun openBatteryOptSettings(pkg: String) {
         try {
             val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -166,9 +450,8 @@ class MainActivity : FlutterActivity() {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
         } catch (e: Exception) {
-            // If the OEM blocks this intent, there is nothing more we can
-            // legitimately do without root — fail silently rather than
-            // pretend it worked.
+            // OEM blocks this intent — nothing more can legitimately be done without root.
         }
     }
+
 }

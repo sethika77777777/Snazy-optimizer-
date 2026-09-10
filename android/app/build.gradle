@@ -2,10 +2,13 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
+
+    // Firebase Google Services
+    id "com.google.gms.google-services"
 }
 
-def flutterVersionCode = '1'
-def flutterVersionName = '1.0.10'
+def flutterVersionCode = '2'
+def flutterVersionName = '2.0.0'
 
 android {
     namespace "com.sethikadv.snazy"
@@ -20,24 +23,35 @@ android {
         jvmTarget = '17'
     }
 
+    // Shizuku AIDL support
+    buildFeatures {
+        aidl true
+        buildConfig false
+    }
+
     defaultConfig {
         applicationId "com.sethikadv.snazy"
-        // App spec requires "all Android versions higher than 10" -> API 29
+
+        // Android 10+
         minSdkVersion 29
         targetSdkVersion 34
+
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
     buildTypes {
         release {
-            // TODO: replace with your own release signing config before
-            // publishing — shipping with the debug key will not install
-            // correctly outside of local testing.
+            // Temporary debug signing for GitHub Actions build
             signingConfig signingConfigs.debug
+
+            // Release optimization
             minifyEnabled true
             shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            proguardFiles getDefaultProguardFile(
+                'proguard-android-optimize.txt'
+            ), 'proguard-rules.pro'
         }
     }
 }
@@ -47,5 +61,17 @@ flutter {
 }
 
 dependencies {
-  implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
+
+    // AndroidX
+    implementation "androidx.core:core-ktx:1.12.0"
+
+    // Google Play Core
+    // Required by Flutter Play Store split compatibility
+    // and fixes R8 missing SplitCompatApplication
+    implementation "com.google.android.play:core:1.10.3"
+
+    // Shizuku
+    implementation "dev.rikka.shizuku:api:13.1.5"
+    implementation "dev.rikka.shizuku:provider:13.1.5"
 }

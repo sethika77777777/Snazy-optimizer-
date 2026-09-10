@@ -1,19 +1,25 @@
 name: snazy_optimizer
-description: "A gaming performance optimizer for Android."
+description: "A gaming performance optimizer for Android — profiles, Shizuku-powered background freeze, and real CPU/GPU tuning."
 publish_to: 'none'
 
-version: 1.0.10+10
+version: 2.0.0+2
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
+  firebase_core: ^2.32.0
+  firebase_messaging: ^14.9.4
+  firebase_analytics: ^10.10.7
+  cloud_firestore: ^4.17.5
+
   shared_preferences: ^2.2.2
   battery_plus: ^5.0.3
   installed_apps: ^1.5.0
+  uuid: ^4.4.2
 
 dev_dependencies:
   flutter_test:
